@@ -5937,6 +5937,33 @@ var ATTR_NS_KEY = 'ATTR_NS';
 
 var localDoc = typeof document !== 'undefined' ? document : {};
 
+function mark(domNode) {
+	var renderAt = window.renderAt;
+	if(typeof renderAt === 'number') {
+		rAF(function() {
+			var result = null;
+			var target = domNode;
+			while(target) {
+				if(target === document) {
+					break;
+				}
+				if(target.nodeType !== Node.TEXT_NODE && target.getAttribute) {
+					if(target.getAttribute('data-render-at-' + renderAt)) {
+						break;
+					}
+					if(!result) {
+						result = target;
+					}
+				}
+				target = target.parentNode;
+			}
+			if(result) {
+				result.setAttribute('data-render-at-' + renderAt, '');
+			}
+		});
+	}
+}
+
 
 ////////////  VIRTUAL DOM NODES  ////////////
 
@@ -6245,12 +6272,16 @@ function render(vNode, eventNode)
 			return domNode;
 
 		case 'text':
-			return localDoc.createTextNode(vNode.text);
+			var node = localDoc.createTextNode(vNode.text);
+			mark(node);
+			return node;
 
 		case 'node':
 			var domNode = vNode.namespace
 				? localDoc.createElementNS(vNode.namespace, vNode.tag)
 				: localDoc.createElement(vNode.tag);
+
+			mark(domNode);
 
 			applyFacts(domNode, eventNode, vNode.facts);
 
@@ -6267,6 +6298,8 @@ function render(vNode, eventNode)
 			var domNode = vNode.namespace
 				? localDoc.createElementNS(vNode.namespace, vNode.tag)
 				: localDoc.createElement(vNode.tag);
+
+			mark(domNode);
 
 			applyFacts(domNode, eventNode, vNode.facts);
 
@@ -6293,6 +6326,8 @@ function render(vNode, eventNode)
 
 function applyFacts(domNode, eventNode, facts)
 {
+	mark(domNode);
+
 	for (var key in facts)
 	{
 		var value = facts[key];
@@ -7180,6 +7215,7 @@ function applyPatch(domNode, patch)
 			return domNode;
 
 		case 'p-text':
+		  mark(domNode);
 			domNode.replaceData(0, domNode.length, patch.data);
 			return domNode;
 
@@ -7561,6 +7597,7 @@ function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 {
 	return function(tagger, initialModel)
 	{
+		window.renderAt = -1;
 		var appEventNode = { tagger: tagger, parent: undefined };
 		var eventNode = { tagger: tagger, parent: undefined };
 
@@ -7582,9 +7619,27 @@ function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 
 		return function stepper(model)
 		{
+			if(typeof model.state._0 == 'number') {
+				window.renderAt = null;
+			} else {
+				window.renderAt = model.history.numMessages - 1;
+			}
+
 			appStepper(model);
 			overStepper(model);
 			debugStepper(model);
+			
+			var style = document.getElementById('visual-vdom');
+			if(!style) {
+				style = document.createElement('style');
+				style.id = 'visual-vdom';
+				document.body.appendChild(style);
+			}
+			if(typeof model.state._0 == 'number') {
+				style.textContent = '*[data-render-at-' + model.state._0 + '] { outline: 2px dashed #e52; outline-offset: -2px; }';
+			} else {
+				style.textContent = '';
+			}
 		}
 	};
 }
@@ -11819,38 +11874,68 @@ var _elm_lang$virtual_dom$AltHtml$beginnerProgram = function (_p0) {
 			}
 		});
 };
+var _elm_lang$virtual_dom$Main$update = F2(
+	function (msg, model) {
+		var _p0 = msg;
+		switch (_p0._0) {
+			case 1:
+				return _elm_lang$core$Native_Utils.update(
+					model,
+					{count1: model.count1 + 1});
+			case 2:
+				return _elm_lang$core$Native_Utils.update(
+					model,
+					{count2: model.count2 + 1});
+			default:
+				return _elm_lang$core$Native_Utils.update(
+					model,
+					{count3: model.count3 + 1});
+		}
+	});
+var _elm_lang$virtual_dom$Main$Model = F3(
+	function (a, b, c) {
+		return {count1: a, count2: b, count3: c};
+	});
+var _elm_lang$virtual_dom$Main$model = A3(_elm_lang$virtual_dom$Main$Model, 0, 0, 0);
+var _elm_lang$virtual_dom$Main$Increment = function (a) {
+	return {ctor: 'Increment', _0: a};
+};
 var _elm_lang$virtual_dom$Main$box = function (count) {
 	return A2(
 		_elm_lang$virtual_dom$AltHtml$div,
 		{
 			ctor: '::',
-			_0: _elm_lang$virtual_dom$AltHtml$style(
-				{
-					ctor: '::',
-					_0: {ctor: '_Tuple2', _0: 'background-color', _1: '#cdb'},
-					_1: {
+			_0: _elm_lang$virtual_dom$AltHtml$onClick(_elm_lang$virtual_dom$Main$Increment),
+			_1: {
+				ctor: '::',
+				_0: _elm_lang$virtual_dom$AltHtml$style(
+					{
 						ctor: '::',
-						_0: {ctor: '_Tuple2', _0: 'width', _1: '100px'},
+						_0: {ctor: '_Tuple2', _0: 'background-color', _1: '#cdb'},
 						_1: {
 							ctor: '::',
-							_0: {ctor: '_Tuple2', _0: 'height', _1: '100px'},
+							_0: {ctor: '_Tuple2', _0: 'width', _1: '100px'},
 							_1: {
 								ctor: '::',
-								_0: {ctor: '_Tuple2', _0: 'margin-bottom', _1: '5px'},
+								_0: {ctor: '_Tuple2', _0: 'height', _1: '100px'},
 								_1: {
 									ctor: '::',
-									_0: {ctor: '_Tuple2', _0: 'text-align', _1: 'center'},
+									_0: {ctor: '_Tuple2', _0: 'margin', _1: '30px'},
 									_1: {
 										ctor: '::',
-										_0: {ctor: '_Tuple2', _0: 'line-height', _1: '100px'},
-										_1: {ctor: '[]'}
+										_0: {ctor: '_Tuple2', _0: 'text-align', _1: 'center'},
+										_1: {
+											ctor: '::',
+											_0: {ctor: '_Tuple2', _0: 'line-height', _1: '100px'},
+											_1: {ctor: '[]'}
+										}
 									}
 								}
 							}
 						}
-					}
-				}),
-			_1: {ctor: '[]'}
+					}),
+				_1: {ctor: '[]'}
+			}
 		},
 		{
 			ctor: '::',
@@ -11859,45 +11944,38 @@ var _elm_lang$virtual_dom$Main$box = function (count) {
 			_1: {ctor: '[]'}
 		});
 };
-var _elm_lang$virtual_dom$Main$update = F2(
-	function (msg, model) {
-		var _p0 = msg;
-		return {count: model.count + 1};
-	});
-var _elm_lang$virtual_dom$Main$model = {count: 0};
-var _elm_lang$virtual_dom$Main$Model = function (a) {
-	return {count: a};
-};
-var _elm_lang$virtual_dom$Main$Increment = {ctor: 'Increment'};
 var _elm_lang$virtual_dom$Main$view = function (model) {
 	return A2(
 		_elm_lang$virtual_dom$AltHtml$div,
 		{ctor: '[]'},
 		{
 			ctor: '::',
-			_0: _elm_lang$virtual_dom$Main$box(model.count),
+			_0: A2(
+				_elm_lang$virtual_dom$AltHtml$map,
+				F2(
+					function (x, y) {
+						return y(x);
+					})(1),
+				_elm_lang$virtual_dom$Main$box(model.count1)),
 			_1: {
 				ctor: '::',
-				_0: A2(_elm_lang$virtual_dom$AltHtml$lazy, _elm_lang$virtual_dom$Main$box, 0),
+				_0: A2(
+					_elm_lang$virtual_dom$AltHtml$map,
+					F2(
+						function (x, y) {
+							return y(x);
+						})(2),
+					_elm_lang$virtual_dom$Main$box(model.count2)),
 				_1: {
 					ctor: '::',
-					_0: _elm_lang$virtual_dom$Main$box(0),
-					_1: {
-						ctor: '::',
-						_0: A2(
-							_elm_lang$virtual_dom$AltHtml$button,
-							{
-								ctor: '::',
-								_0: _elm_lang$virtual_dom$AltHtml$onClick(_elm_lang$virtual_dom$Main$Increment),
-								_1: {ctor: '[]'}
-							},
-							{
-								ctor: '::',
-								_0: _elm_lang$virtual_dom$AltHtml$text('Increment'),
-								_1: {ctor: '[]'}
-							}),
-						_1: {ctor: '[]'}
-					}
+					_0: A2(
+						_elm_lang$virtual_dom$AltHtml$map,
+						F2(
+							function (x, y) {
+								return y(x);
+							})(3),
+						A2(_elm_lang$virtual_dom$AltHtml$lazy, _elm_lang$virtual_dom$Main$box, model.count3)),
+					_1: {ctor: '[]'}
 				}
 			}
 		});
@@ -11907,7 +11985,7 @@ var _elm_lang$virtual_dom$Main$main = _elm_lang$virtual_dom$AltHtml$beginnerProg
 var Elm = {};
 Elm['Main'] = Elm['Main'] || {};
 if (typeof _elm_lang$virtual_dom$Main$main !== 'undefined') {
-    _elm_lang$virtual_dom$Main$main(Elm['Main'], 'Main', {"types":{"unions":{"Main.Msg":{"args":[],"tags":{"Increment":[]}}},"aliases":{},"message":"Main.Msg"},"versions":{"elm":"0.18.0"}});
+    _elm_lang$virtual_dom$Main$main(Elm['Main'], 'Main', {"types":{"unions":{"Main.Msg":{"args":[],"tags":{"Increment":["Int"]}}},"aliases":{},"message":"Main.Msg"},"versions":{"elm":"0.18.0"}});
 }
 
 if (typeof define === "function" && define['amd'])

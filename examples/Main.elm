@@ -14,13 +14,15 @@ main =
 
 
 type alias Model =
-  { count : Int
+  { count1 : Int
+  , count2 : Int
+  , count3 : Int
   }
 
 
 model : Model
 model =
-  { count = 0 }
+  Model 0 0 0
 
 
 
@@ -28,14 +30,20 @@ model =
 
 
 type Msg
-    = Increment
+    = Increment Int
 
 
 update : Msg -> Model -> Model
 update msg model =
   case msg of
-    Increment ->
-      { count = model.count + 1 }
+    Increment 1 ->
+      { model | count1 = model.count1 + 1 }
+
+    Increment 2 ->
+      { model | count2 = model.count2 + 1 }
+
+    Increment three ->
+      { model | count3 = model.count3 + 1 }
 
 
 
@@ -45,21 +53,21 @@ update msg model =
 view : Model -> Html Msg
 view model =
   div []
-    [ box model.count
-    , lazy box 0
-    , box 0
-    , button [ onClick Increment ] [ text "Increment" ]
+    [ box model.count1 |> map ((|>) 1)
+    , box model.count2 |> map ((|>) 2)
+    , lazy box model.count3 |> map ((|>) 3)
     ]
 
 
-box : Int -> Html msg
+box : Int -> Html (Int -> Msg)
 box count =
   div
-    [ style
+    [ onClick Increment
+    , style
         [ ("background-color", "#cdb")
         , ("width", "100px")
         , ("height", "100px")
-        , ("margin-bottom", "5px")
+        , ("margin", "30px")
         , ("text-align", "center")
         , ("line-height", "100px")
         ]

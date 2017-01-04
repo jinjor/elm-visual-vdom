@@ -10,6 +10,33 @@ var ATTR_NS_KEY = 'ATTR_NS';
 
 var localDoc = typeof document !== 'undefined' ? document : {};
 
+function mark(domNode) {
+	var renderAt = window.renderAt;
+	if(typeof renderAt === 'number') {
+		rAF(function() {
+			var result = null;
+			var target = domNode;
+			while(target) {
+				if(target === document) {
+					break;
+				}
+				if(target.nodeType !== Node.TEXT_NODE && target.getAttribute) {
+					if(target.getAttribute('data-render-at-' + renderAt)) {
+						break;
+					}
+					if(!result) {
+						result = target;
+					}
+				}
+				target = target.parentNode;
+			}
+			if(result) {
+				result.setAttribute('data-render-at-' + renderAt, '');
+			}
+		});
+	}
+}
+
 
 ////////////  VIRTUAL DOM NODES  ////////////
 
@@ -318,12 +345,16 @@ function render(vNode, eventNode)
 			return domNode;
 
 		case 'text':
-			return localDoc.createTextNode(vNode.text);
+			var node = localDoc.createTextNode(vNode.text);
+			mark(node);
+			return node;
 
 		case 'node':
 			var domNode = vNode.namespace
 				? localDoc.createElementNS(vNode.namespace, vNode.tag)
 				: localDoc.createElement(vNode.tag);
+
+			mark(domNode);
 
 			applyFacts(domNode, eventNode, vNode.facts);
 
@@ -340,6 +371,8 @@ function render(vNode, eventNode)
 			var domNode = vNode.namespace
 				? localDoc.createElementNS(vNode.namespace, vNode.tag)
 				: localDoc.createElement(vNode.tag);
+
+			mark(domNode);
 
 			applyFacts(domNode, eventNode, vNode.facts);
 
@@ -366,6 +399,8 @@ function render(vNode, eventNode)
 
 function applyFacts(domNode, eventNode, facts)
 {
+	mark(domNode);
+
 	for (var key in facts)
 	{
 		var value = facts[key];
@@ -1253,6 +1288,7 @@ function applyPatch(domNode, patch)
 			return domNode;
 
 		case 'p-text':
+		  mark(domNode);
 			domNode.replaceData(0, domNode.length, patch.data);
 			return domNode;
 
@@ -1634,6 +1670,7 @@ function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 {
 	return function(tagger, initialModel)
 	{
+		window.renderAt = -1;
 		var appEventNode = { tagger: tagger, parent: undefined };
 		var eventNode = { tagger: tagger, parent: undefined };
 
@@ -1655,9 +1692,27 @@ function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 
 		return function stepper(model)
 		{
+			if(typeof model.state._0 == 'number') {
+				window.renderAt = null;
+			} else {
+				window.renderAt = model.history.numMessages - 1;
+			}
+
 			appStepper(model);
 			overStepper(model);
 			debugStepper(model);
+			
+			var style = document.getElementById('visual-vdom');
+			if(!style) {
+				style = document.createElement('style');
+				style.id = 'visual-vdom';
+				document.body.appendChild(style);
+			}
+			if(typeof model.state._0 == 'number') {
+				style.textContent = '*[data-render-at-' + model.state._0 + '] { outline: 2px dashed #e52; outline-offset: -2px; }';
+			} else {
+				style.textContent = '';
+			}
 		}
 	};
 }
