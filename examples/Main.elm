@@ -54,8 +54,19 @@ view : Model -> Html Msg
 view model =
   div []
     [ box model.count1 |> map ((|>) 1)
-    , box model.count2 |> map ((|>) 2)
-    , lazy box model.count3 |> map ((|>) 3)
+    , br [] []
+    , lazy box model.count2 |> map ((|>) 2)
+    , text "lazy"
+    , br [] []
+    , lazy box2 (model.count3, 0) |> map ((|>) 3) -- unexpected leak
+    , text "lazy (unexpectedly not working)"
+    , br [] []
+    , hr [] []
+    , ul []
+        [ li [] [ text "solid red: rendered" ]
+        , li [] [ text "dashed green: not rendered, and lazy succeeded" ]
+        , li [] [ text "dashed red: not rendered, and lazy failed" ]
+        ]
     ]
 
 
@@ -70,7 +81,13 @@ box count =
         , ("margin", "30px")
         , ("text-align", "center")
         , ("line-height", "100px")
+        , ("display", "inline-block")
         ]
     ]
     [ text (toString count)
     ]
+
+
+box2 : (Int, Int) -> Html (Int -> Msg)
+box2 (count, _) =
+  box count

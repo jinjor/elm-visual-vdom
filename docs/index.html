@@ -6252,6 +6252,7 @@ function render(vNode, eventNode)
 			if (!vNode.node)
 			{
 				vNode.node = vNode.thunk();
+				vNode.node.guid = _elm_lang$core$Native_Utils.guid();
 			}
 			return render(vNode.node, eventNode);
 
@@ -6275,7 +6276,7 @@ function render(vNode, eventNode)
 
 		case 'text':
 			var node = localDoc.createTextNode(vNode.text);
-			
+
 			mark(node);
 
 			return node;
@@ -6284,6 +6285,13 @@ function render(vNode, eventNode)
 			var domNode = vNode.namespace
 				? localDoc.createElementNS(vNode.namespace, vNode.tag)
 				: localDoc.createElement(vNode.tag);
+
+			if(vNode.guid) {
+				domNode.setAttribute('data-guid', vNode.guid);
+				if(typeof renderAt === 'number') {
+					domNode.setAttribute('data-not-reused-at-' + renderAt, '');
+				}
+			}
 
 			mark(domNode);
 
@@ -6547,9 +6555,22 @@ function diffHelp(a, b, patches, index)
 			if (same)
 			{
 				b.node = a.node;
+				if(typeof renderAt === 'number') {
+					var realDom = document.querySelector('[data-guid="' + a.node.guid + '"]');
+					if(realDom) {
+						realDom.setAttribute('data-reused-at-' + renderAt, '');
+					}
+				}
 				return;
 			}
 			b.node = b.thunk();
+			b.node.guid = a.node.guid;
+			if(typeof renderAt === 'number') {
+				var realDom = document.querySelector('[data-guid="' + a.node.guid + '"]');
+				if(realDom) {
+					realDom.setAttribute('data-not-reused-at-' + renderAt, '');
+				}
+			}
 			var subPatches = [];
 			diffHelp(a.node, b.node, subPatches, 0);
 			if (subPatches.length > 0)
@@ -7640,7 +7661,11 @@ function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 				document.body.appendChild(style);
 			}
 			if(typeof model.state._0 == 'number') {
-				style.textContent = '*[data-render-at-' + model.state._0 + '] { outline: 2px dashed #e52; outline-offset: -2px; }';
+				var s = '';
+				s += '*[data-reused-at-' + model.state._0 + '] { outline: 2px dashed #2a3; outline-offset: -2px; }';
+				s += '*[data-not-reused-at-' + model.state._0 + '] { outline: 2px dashed #e52; outline-offset: -2px; }';
+				s += '*[data-render-at-' + model.state._0 + '] { outline: 2px solid #e52; outline-offset: -2px; }';
+				style.textContent = s;
 			} else {
 				style.textContent = '';
 			}
@@ -11851,6 +11876,9 @@ var _elm_lang$virtual_dom$AltHtml$onClick = function (msg) {
 		_elm_lang$core$Json_Decode$succeed(msg));
 };
 var _elm_lang$virtual_dom$AltHtml$style = _elm_lang$virtual_dom$VirtualDom$style;
+var _elm_lang$virtual_dom$AltHtml$li = _elm_lang$virtual_dom$VirtualDom$node('li');
+var _elm_lang$virtual_dom$AltHtml$ul = _elm_lang$virtual_dom$VirtualDom$node('ul');
+var _elm_lang$virtual_dom$AltHtml$br = _elm_lang$virtual_dom$VirtualDom$node('br');
 var _elm_lang$virtual_dom$AltHtml$hr = _elm_lang$virtual_dom$VirtualDom$node('hr');
 var _elm_lang$virtual_dom$AltHtml$button = _elm_lang$virtual_dom$VirtualDom$node('button');
 var _elm_lang$virtual_dom$AltHtml$div = _elm_lang$virtual_dom$VirtualDom$node('div');
@@ -11931,7 +11959,11 @@ var _elm_lang$virtual_dom$Main$box = function (count) {
 										_1: {
 											ctor: '::',
 											_0: {ctor: '_Tuple2', _0: 'line-height', _1: '100px'},
-											_1: {ctor: '[]'}
+											_1: {
+												ctor: '::',
+												_0: {ctor: '_Tuple2', _0: 'display', _1: 'inline-block'},
+												_1: {ctor: '[]'}
+											}
 										}
 									}
 								}
@@ -11947,6 +11979,10 @@ var _elm_lang$virtual_dom$Main$box = function (count) {
 				_elm_lang$core$Basics$toString(count)),
 			_1: {ctor: '[]'}
 		});
+};
+var _elm_lang$virtual_dom$Main$box2 = function (_p1) {
+	var _p2 = _p1;
+	return _elm_lang$virtual_dom$Main$box(_p2._0);
 };
 var _elm_lang$virtual_dom$Main$view = function (model) {
 	return A2(
@@ -11964,12 +12000,9 @@ var _elm_lang$virtual_dom$Main$view = function (model) {
 			_1: {
 				ctor: '::',
 				_0: A2(
-					_elm_lang$virtual_dom$AltHtml$map,
-					F2(
-						function (x, y) {
-							return y(x);
-						})(2),
-					_elm_lang$virtual_dom$Main$box(model.count2)),
+					_elm_lang$virtual_dom$AltHtml$br,
+					{ctor: '[]'},
+					{ctor: '[]'}),
 				_1: {
 					ctor: '::',
 					_0: A2(
@@ -11977,9 +12010,91 @@ var _elm_lang$virtual_dom$Main$view = function (model) {
 						F2(
 							function (x, y) {
 								return y(x);
-							})(3),
-						A2(_elm_lang$virtual_dom$AltHtml$lazy, _elm_lang$virtual_dom$Main$box, model.count3)),
-					_1: {ctor: '[]'}
+							})(2),
+						A2(_elm_lang$virtual_dom$AltHtml$lazy, _elm_lang$virtual_dom$Main$box, model.count2)),
+					_1: {
+						ctor: '::',
+						_0: _elm_lang$virtual_dom$AltHtml$text('lazy'),
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$virtual_dom$AltHtml$br,
+								{ctor: '[]'},
+								{ctor: '[]'}),
+							_1: {
+								ctor: '::',
+								_0: A2(
+									_elm_lang$virtual_dom$AltHtml$map,
+									F2(
+										function (x, y) {
+											return y(x);
+										})(3),
+									A2(
+										_elm_lang$virtual_dom$AltHtml$lazy,
+										_elm_lang$virtual_dom$Main$box2,
+										{ctor: '_Tuple2', _0: model.count3, _1: 0})),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$virtual_dom$AltHtml$text('lazy (unexpectedly not working)'),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$virtual_dom$AltHtml$br,
+											{ctor: '[]'},
+											{ctor: '[]'}),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$virtual_dom$AltHtml$hr,
+												{ctor: '[]'},
+												{ctor: '[]'}),
+											_1: {
+												ctor: '::',
+												_0: A2(
+													_elm_lang$virtual_dom$AltHtml$ul,
+													{ctor: '[]'},
+													{
+														ctor: '::',
+														_0: A2(
+															_elm_lang$virtual_dom$AltHtml$li,
+															{ctor: '[]'},
+															{
+																ctor: '::',
+																_0: _elm_lang$virtual_dom$AltHtml$text('solid red: rendered'),
+																_1: {ctor: '[]'}
+															}),
+														_1: {
+															ctor: '::',
+															_0: A2(
+																_elm_lang$virtual_dom$AltHtml$li,
+																{ctor: '[]'},
+																{
+																	ctor: '::',
+																	_0: _elm_lang$virtual_dom$AltHtml$text('dashed green: not rendered, and lazy succeeded'),
+																	_1: {ctor: '[]'}
+																}),
+															_1: {
+																ctor: '::',
+																_0: A2(
+																	_elm_lang$virtual_dom$AltHtml$li,
+																	{ctor: '[]'},
+																	{
+																		ctor: '::',
+																		_0: _elm_lang$virtual_dom$AltHtml$text('dashed red: not rendered, and lazy failed'),
+																		_1: {ctor: '[]'}
+																	}),
+																_1: {ctor: '[]'}
+															}
+														}
+													}),
+												_1: {ctor: '[]'}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 		});

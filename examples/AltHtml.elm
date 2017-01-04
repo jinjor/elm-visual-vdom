@@ -60,6 +60,21 @@ hr =
   node "hr"
 
 
+br : List (Attribute msg) -> List (Node msg) -> Node msg
+br =
+  node "br"
+
+
+ul : List (Attribute msg) -> List (Node msg) -> Node msg
+ul =
+  node "ul"
+
+
+li : List (Attribute msg) -> List (Node msg) -> Node msg
+li =
+  node "li"
+
+
 ---
 
 

@@ -325,6 +325,7 @@ function render(vNode, eventNode)
 			if (!vNode.node)
 			{
 				vNode.node = vNode.thunk();
+				vNode.node.guid = _elm_lang$core$Native_Utils.guid();
 			}
 			return render(vNode.node, eventNode);
 
@@ -348,7 +349,7 @@ function render(vNode, eventNode)
 
 		case 'text':
 			var node = localDoc.createTextNode(vNode.text);
-			
+
 			mark(node);
 
 			return node;
@@ -357,6 +358,13 @@ function render(vNode, eventNode)
 			var domNode = vNode.namespace
 				? localDoc.createElementNS(vNode.namespace, vNode.tag)
 				: localDoc.createElement(vNode.tag);
+
+			if(vNode.guid) {
+				domNode.setAttribute('data-guid', vNode.guid);
+				if(typeof renderAt === 'number') {
+					domNode.setAttribute('data-not-reused-at-' + renderAt, '');
+				}
+			}
 
 			mark(domNode);
 
@@ -620,9 +628,22 @@ function diffHelp(a, b, patches, index)
 			if (same)
 			{
 				b.node = a.node;
+				if(typeof renderAt === 'number') {
+					var realDom = document.querySelector('[data-guid="' + a.node.guid + '"]');
+					if(realDom) {
+						realDom.setAttribute('data-reused-at-' + renderAt, '');
+					}
+				}
 				return;
 			}
 			b.node = b.thunk();
+			b.node.guid = a.node.guid;
+			if(typeof renderAt === 'number') {
+				var realDom = document.querySelector('[data-guid="' + a.node.guid + '"]');
+				if(realDom) {
+					realDom.setAttribute('data-not-reused-at-' + renderAt, '');
+				}
+			}
 			var subPatches = [];
 			diffHelp(a.node, b.node, subPatches, 0);
 			if (subPatches.length > 0)
@@ -1713,7 +1734,11 @@ function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 				document.body.appendChild(style);
 			}
 			if(typeof model.state._0 == 'number') {
-				style.textContent = '*[data-render-at-' + model.state._0 + '] { outline: 2px dashed #e52; outline-offset: -2px; }';
+				var s = '';
+				s += '*[data-reused-at-' + model.state._0 + '] { outline: 2px dashed #2a3; outline-offset: -2px; }';
+				s += '*[data-not-reused-at-' + model.state._0 + '] { outline: 2px dashed #e52; outline-offset: -2px; }';
+				s += '*[data-render-at-' + model.state._0 + '] { outline: 2px solid #e52; outline-offset: -2px; }';
+				style.textContent = s;
 			} else {
 				style.textContent = '';
 			}
