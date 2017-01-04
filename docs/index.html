@@ -5937,9 +5937,11 @@ var ATTR_NS_KEY = 'ATTR_NS';
 
 var localDoc = typeof document !== 'undefined' ? document : {};
 
+var renderAt = null;
+
 function mark(domNode) {
-	var renderAt = window.renderAt;
-	if(typeof renderAt === 'number') {
+	var at = renderAt;
+	if(typeof at === 'number') {
 		rAF(function() {
 			var result = null;
 			var target = domNode;
@@ -5948,7 +5950,7 @@ function mark(domNode) {
 					break;
 				}
 				if(target.nodeType !== Node.TEXT_NODE && target.getAttribute) {
-					if(target.getAttribute('data-render-at-' + renderAt)) {
+					if(target.getAttribute('data-render-at-' + at)) {
 						break;
 					}
 					if(!result) {
@@ -5958,7 +5960,7 @@ function mark(domNode) {
 				target = target.parentNode;
 			}
 			if(result) {
-				result.setAttribute('data-render-at-' + renderAt, '');
+				result.setAttribute('data-render-at-' + at, '');
 			}
 		});
 	}
@@ -6273,7 +6275,9 @@ function render(vNode, eventNode)
 
 		case 'text':
 			var node = localDoc.createTextNode(vNode.text);
+			
 			mark(node);
+
 			return node;
 
 		case 'node':
@@ -7597,7 +7601,7 @@ function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 {
 	return function(tagger, initialModel)
 	{
-		window.renderAt = -1;
+		renderAt = -1;
 		var appEventNode = { tagger: tagger, parent: undefined };
 		var eventNode = { tagger: tagger, parent: undefined };
 
@@ -7620,15 +7624,15 @@ function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 		return function stepper(model)
 		{
 			if(typeof model.state._0 == 'number') {
-				window.renderAt = null;
+				renderAt = null;
 			} else {
-				window.renderAt = model.history.numMessages - 1;
+				renderAt = model.history.numMessages - 1;
 			}
 
 			appStepper(model);
 			overStepper(model);
 			debugStepper(model);
-			
+
 			var style = document.getElementById('visual-vdom');
 			if(!style) {
 				style = document.createElement('style');
